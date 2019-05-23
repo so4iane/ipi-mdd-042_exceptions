@@ -165,6 +165,12 @@ public class MyRunner implements CommandLineRunner {
             throw new BatchException("Le grade du technicien est incorrect : " + technicienFields[5]);
         }
 
+        if (employeRepository.findByMatricule(technicienFields[6]) == null)
+        {
+          throw new BatchException("Le manager de matricule " +technicienFields[6]+ " n'a pas été trouvé dans le fichier ou en base de données");
+        }
+
+
     }
 
     private void fieldsChecker(String[] fields) throws BatchException {
@@ -183,6 +189,7 @@ public class MyRunner implements CommandLineRunner {
             throw new  BatchException(fields[4]+" n'est pas un nombre valide pour un salaire");
         }
     }
+
 
 
 }
