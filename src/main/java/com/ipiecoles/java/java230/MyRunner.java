@@ -1,6 +1,7 @@
 package com.ipiecoles.java.java230;
 
 import com.ipiecoles.java.java230.exceptions.BatchException;
+import com.ipiecoles.java.java230.exceptions.TechnicienException;
 import com.ipiecoles.java.java230.model.Commercial;
 import com.ipiecoles.java.java230.model.Employe;
 import com.ipiecoles.java.java230.model.Manager;
@@ -176,12 +177,15 @@ public class MyRunner implements CommandLineRunner {
         }
         try {
             Integer.parseInt(technicienFields[5]);
-            if (!technicienFields[5].matches("[1-5]")){
-                throw new BatchException("Le grade doit être compris entre 1 et 5 : "+ technicienFields[5]);
-            }
-            t.setGrade(Integer.parseInt(technicienFields[5]));
+
         }catch(Exception e){
             throw new BatchException("Le grade du technicien est incorrect : " + technicienFields[5]);
+        }
+        try {
+            Integer.parseInt(technicienFields[5]);
+            t.setGrade(Integer.parseInt(technicienFields[5]));
+        }catch (TechnicienException e){
+            throw new BatchException("Le grade doit être compris entre 1 et 5 : "+ technicienFields[5]);
         }
         fieldsChecker(t,technicienFields);
 
