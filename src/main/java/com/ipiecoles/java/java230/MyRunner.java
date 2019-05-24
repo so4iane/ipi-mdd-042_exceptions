@@ -3,6 +3,8 @@ package com.ipiecoles.java.java230;
 import com.ipiecoles.java.java230.exceptions.BatchException;
 import com.ipiecoles.java.java230.model.Commercial;
 import com.ipiecoles.java.java230.model.Employe;
+import com.ipiecoles.java.java230.model.Manager;
+import com.ipiecoles.java.java230.model.Technicien;
 import com.ipiecoles.java.java230.repository.EmployeRepository;
 import com.ipiecoles.java.java230.repository.ManagerRepository;
 import javassist.bytecode.stackmap.BasicBlock;
@@ -76,6 +78,7 @@ public class MyRunner implements CommandLineRunner {
                 logger.error("Ligne "+ (i+1) + " : " +e.getMessage()+ " => " +lignes.get(i));
             }
             }
+        employeRepository.save(employes);
         return employes;
     }
 
@@ -108,13 +111,26 @@ public class MyRunner implements CommandLineRunner {
      */
     private void processCommercial(String ligneCommercial) throws BatchException {
         //TODO
+        Commercial c = new Commercial();
         String[] commercialFields = ligneCommercial.split(",");
         if (commercialFields.length != NB_CHAMPS_COMMERCIAL){
             throw new BatchException("La ligne commercial ne contient pas " +NB_CHAMPS_COMMERCIAL+ " éléments mais " + commercialFields.length);
         }
-        fieldsChecker(commercialFields);
+        fieldsChecker(c,commercialFields);
 
-        Commercial c =new Commercial();
+        try {
+            Double.parseDouble(commercialFields[5]);
+            c.setCaAnnuel(Double.parseDouble(commercialFields[5]));
+
+        }catch(Exception e){
+            throw new BatchException("Le chiffre d'affaire du commercial est incorrect : " + commercialFields[5]);
+        }
+
+        if (!commercialFields[6].matches("[0-100]")) {
+            throw new BatchException("La performance du commercial est incorrecte " + commercialFields[6]);
+        }else{
+            c.setPerformance(Integer.parseInt(commercialFields[6]));
+        }
         employes.add(c);
     }
 
@@ -125,19 +141,21 @@ public class MyRunner implements CommandLineRunner {
      */
     private void processManager(String ligneManager) throws BatchException {
         //TODO
+        Manager m = new Manager();
         String[] managerFields = ligneManager.split(",");
 
 
         if (managerFields.length != NB_CHAMPS_MANAGER){
             throw new BatchException("La ligne manager ne contient pas " +NB_CHAMPS_MANAGER+ " éléments mais " + managerFields.length);
         }
-        fieldsChecker(managerFields);
+        fieldsChecker(m, managerFields);
         try {
             Double.parseDouble(managerFields[4]);
         }
         catch (Exception e){
             throw new  BatchException(managerFields[4]+" n'est pas un nombre valide pour un salaire");
         }
+        employes.add(m);
     }
 
 
@@ -149,10 +167,10 @@ public class MyRunner implements CommandLineRunner {
     private void processTechnicien(String ligneTechnicien) throws BatchException {
         //TODO
         String[] technicienFields = ligneTechnicien.split(",");
+        Technicien t = new Technicien();
         if (technicienFields.length != NB_CHAMPS_TECHNICIEN){
             throw new BatchException("La ligne technicien ne contient pas " +NB_CHAMPS_TECHNICIEN+ " éléments mais " + technicienFields.length);
         }
-        fieldsChecker(technicienFields);
         if (!technicienFields[6].matches(REGEX_MATRICULE_MANAGER)) {
             throw new BatchException("la chaîne " + technicienFields[6] + " ne respecte pas l'expression régulière " +REGEX_MATRICULE_MANAGER);
         }
@@ -161,33 +179,57 @@ public class MyRunner implements CommandLineRunner {
             if (!technicienFields[5].matches("[1-5]")){
                 throw new BatchException("Le grade doit être compris entre 1 et 5 : "+ technicienFields[5]);
             }
+            t.setGrade(Integer.parseInt(technicienFields[5]));
         }catch(Exception e){
             throw new BatchException("Le grade du technicien est incorrect : " + technicienFields[5]);
         }
+        fieldsChecker(t,technicienFields);
 
         if (employeRepository.findByMatricule(technicienFields[6]) == null)
         {
           throw new BatchException("Le manager de matricule " +technicienFields[6]+ " n'a pas été trouvé dans le fichier ou en base de données");
         }
-
+        employes.stream().forEach(emp->{
+            if (emp instanceof Manager && emp.getMatricule() == technicienFields[6])
+            {
+                t.setManager((Manager)emp);
+            }
+        });
+        if (t.getManager()==null)
+        {
+            throw new BatchException("Le manager de matricule " +technicienFields[6]+ " n'a pas été trouvé dans le fichier ou en base de données");
+        }
+        employes.add(t);
 
     }
 
-    private void fieldsChecker(String[] fields) throws BatchException {
+    private void fieldsChecker(Employe e, String[] fields) throws BatchException {
         if (!fields[0].matches(REGEX_MATRICULE)) {
             throw new BatchException("la chaîne " + fields[0] + " ne respecte pas l'expression régulière " +REGEX_MATRICULE);
-        }
+        }else{e.setMatricule(fields[0]);}
+
+        if (!fields[1].matches(REGEX_NOM)) {
+            throw new BatchException("le nom " + fields[1] + " n'est pas valide ");
+        }else{e.setNom(fields[1]);}
+
+        if (!fields[2].matches(REGEX_PRENOM)) {
+            throw new BatchException("le prénom " + fields[2] + " n'est pas valide ");
+        }else{e.setPrenom(fields[2]);}
+
         try {
             DateTimeFormat.forPattern("dd/MM/yyyy").parseLocalDate(fields[3]);
-        } catch(Exception e) {
+            e.setDateEmbauche(DateTimeFormat.forPattern("dd/MM/yyyy").parseLocalDate(fields[3]));
+        } catch(Exception ex) {
             throw new BatchException(fields[3]+ " ne respecte pas le format de date dd/MM/yyyy");
         }
         try {
             Double.parseDouble(fields[4]);
+            e.setSalaire(Double.parseDouble(fields[4]));
         }
-        catch (Exception e){
+        catch (Exception ex){
             throw new  BatchException(fields[4]+" n'est pas un nombre valide pour un salaire");
         }
+
     }
 
 
